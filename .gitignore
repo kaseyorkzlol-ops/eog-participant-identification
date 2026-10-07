@@ -1,0 +1,45 @@
+# --- Dataset: never commit. Obtain separately (see README.md) ---------------
+Data/
+*.mat
+*.h5
+*.hdf5
+
+# --- Generated outputs: contain participant-level results (per-window
+# features, predictions, per-participant metrics, coefficients, drift fits).
+# Kept local only, pending privacy review.
+results/
+
+# --- Derived data / fitted models / arrays ---------------------------------
+*.csv
+*.tsv
+*.npy
+*.npz
+*.pkl
+*.pickle
+*.joblib
+
+# --- Credentials and environment files -------------------------------------
+.env
+.env.*
+*.env
+*.pem
+*.key
+
+# --- Python -----------------------------------------------------------------
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+.venv/
+venv/
+env/
+
+# --- IDE / OS / temporary ---------------------------------------------------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
+*.log
+*.swp

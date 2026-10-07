@@ -1,0 +1,8 @@
+# Exact versions used for the reported results (Python 3.14.7, Windows 11).
+# Newer compatible versions will very likely work, but these reproduce the
+# published numbers exactly. pandas and pytest are NOT required.
+numpy==2.5.3
+scipy==1.18.1
+h5py==3.16.0
+scikit-learn==1.9.1
+matplotlib==3.11.2
