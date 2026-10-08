@@ -4,8 +4,7 @@ Analysis code for **within-session participant identification** from two-channel
 
 > **Important scope limitation.** The dataset used has **one recording session per participant**. Training and test windows therefore always come from the same recording. These experiments **cannot establish cross-session or biometric identification**; any recording-specific property (electrode placement, skin contact, amplifier offset) is confounded with identity.
 
-> **Status:** private, pre-release research code. Code license, attribution, dataset permissions and privacy review are **pending** (see [RELEASE_READINESS.md](RELEASE_READINESS.md)). No license is granted yet.
-
+> **Status:** Active research project and open-source work in progress. The current repository contains reproducible within-session participant-identification experiments. Binary EOG authentication experiments are under development. Code is released under the MIT License. The dataset is not redistributed here and remains subject to the original dataset authors' terms.
 This repository contains **code only**: no raw data, no derived per-participant data, no figures from the dataset's article. A summary of aggregate results is in [RESEARCH_SUMMARY.md](RESEARCH_SUMMARY.md).
 
 ## Getting the data
@@ -77,8 +76,7 @@ All tests and scripts need the dataset. Without it they stop with a "file not fo
 
 ```
 raw EOG (A, B; 250 Hz, ~69 s per participant)
-  → non-overlapping 2-s windows (500 samples): 34 per participant, 918 total
-  → 6 features per window: mean, std (ddof=0), range (max − min) of A and of B
+→ non-overlapping 2-s windows (500 EOG data points each): 34 ML samples per participant, 918 total  → 6 features per window: mean, std (ddof=0), range (max − min) of A and of B
   → per-participant split, 20 train / 7 validation / 7 test windows
        chronological holdout: first 20 / next 7 / last 7 windows (primary)
        random within-session split: windows shuffled per participant (fixed seed)
@@ -88,7 +86,20 @@ raw EOG (A, B; 250 Hz, ~69 s per participant)
 ```
 
 Every participant appears in all three splits (closed-set identification). The validation set is reported but is not used for any selection.
+## Current direction
 
+The current repository establishes a reproducible 27-class participant-identification baseline.
+
+The next phase of the project investigates EOG authentication as a binary verification problem. For a given enrolled participant, that participant's windows are treated as genuine/authorized examples and windows from other participants are treated as impostor examples.
+
+Planned work includes:
+
+- one-vs-rest authentication experiments for selected participants
+- authentication-oriented evaluation using false acceptance rate, false rejection rate, ROC-AUC, and related metrics
+- comparison of classical machine-learning models
+- investigation of features less sensitive to recording-specific DC offset and temporal drift
+
+These experiments are ongoing and their results are not yet included in the current baseline.
 ## Files
 
 | File | Purpose |
@@ -110,12 +121,21 @@ Every participant appears in all three splits (closed-set identification). The v
 - **One session per participant.** Within-session identification only. Nothing here demonstrates identity that is stable across sessions.
 - **Recording-level DC offsets.** Channel means differ greatly between recordings, and the classifier relies heavily on them. Their origin (electrode, amplifier or session factors versus physiology) cannot be determined from this dataset.
 - **Within-recording drift.** Mean features drift slowly and nearly monotonically within most recordings.
-- **Random within-session splits are optimistic.** They gave higher accuracy than chronological holdout, because test windows are interleaved in time with training windows.
-- **Repeated random splits are not independent replications.** They are repartitions of the same 27 recordings.
+- **Random within-session splits are more optimistic.** They consistently produced higher accuracy than chronological holdout. Because test windows are interleaved in time with training windows, slowly drifting recording-specific characteristics may contribute to this difference.- **Repeated random splits are not independent replications.** They are repartitions of the same 27 recordings.
 - **Windows are not independent.** All 34 windows of a participant come from one ~69-s recording.
 - **Small sample.** 27 participants and 7 test windows each; one test window ≈ 0.5 percentage points of accuracy.
 - **Coefficient magnitudes are descriptive.** They show how strongly the fitted linear model uses a standardized feature, not causal or physiological importance.
 
-## License and attribution
+## License
 
-**No license has been selected for this code yet** (pending). Until one is added, no permission to use, copy or redistribute is granted beyond what GitHub's terms allow for viewing. Authorship and attribution for this analysis are also pending confirmation. The dataset citation above must be kept in any derived work.
+The analysis code in this repository is released under the MIT License. See [LICENSE](LICENSE) for details.
+
+The EOG dataset is a separate work and is **not** covered by this repository's MIT License. The dataset is not redistributed here. Users should obtain it from the original source and follow the dataset authors' license and citation requirements.
+
+## Acknowledgments
+
+This project is conducted under the mentorship of **Professor Qingqing Li at Towson University**.
+
+I thank Professor Li for guidance on experimental design, machine-learning methodology, interpretation of the results, and the development of the biometric-authentication direction of this project.
+
+I also acknowledge the authors of the EOG dataset used in this project, whose publicly available data enable these experiments.
