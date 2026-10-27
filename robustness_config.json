@@ -1,0 +1,7 @@
+{
+  "seed": 20261019,
+  "bootstrap_draws": 5000,
+  "matched_impostor_repeats": 10,
+  "dc_blocker_cutoff_hz": 0.5,
+  "variants": ["original", "means_only", "std_range_only", "window_centered", "first_sample_reference", "causal_dc_blocker"]
+}

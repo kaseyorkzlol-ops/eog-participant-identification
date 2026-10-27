@@ -9,7 +9,9 @@ Equivalent to running, one after another:
     python run_drift_analysis.py     # drift quantification (results/drift/)
     python run_coefficients.py       # logistic-regression coefficients (results/coefficients/)
     python run_model_comparison.py   # six-model comparison (results/model_comparison/)
-    python test_pipeline.py       # invariant tests
+    python run_authentication.py     # verification benchmark (results/authentication/)
+    python test_pipeline.py          # data-backed invariant tests
+    python test_authentication.py    # data-free authentication unit tests
 """
 
 import os
@@ -18,7 +20,8 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCRIPTS = ["baseline.py", "run_ablation.py", "run_drift_analysis.py",
-           "run_coefficients.py", "run_model_comparison.py", "test_pipeline.py"]
+           "run_coefficients.py", "run_model_comparison.py", "run_authentication.py",
+           "test_pipeline.py", "test_authentication.py"]
 
 if __name__ == "__main__":
     for script in SCRIPTS:

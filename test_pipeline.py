@@ -33,7 +33,9 @@ def test_raw_data_files_not_modified():
         entries = [line.strip().split("  ", 1) for line in fh if line.strip()]
     assert len(entries) == 27
     for expected, rel in entries:
-        with open(os.path.join(lb.REPO_DIR, rel), "rb") as f:
+        # RAW_DIR may be overridden when the licensed dataset is stored outside
+        # the repository; the checksum manifest still identifies files by name.
+        with open(os.path.join(lb.RAW_DIR, os.path.basename(rel)), "rb") as f:
             assert hashlib.sha256(f.read()).hexdigest() == expected, f"{rel} differs from recorded checksum"
 
 

@@ -92,3 +92,26 @@ What these results do **not** establish:
 **Suggested next steps:**
 - **Cross-session evaluation** (at least two sessions per participant) is required for any identity claim.
 - **Within this dataset,** test offset-invariant features (per-window detrending, event-based saccade/blink/fixation features, spectral features) under chronological holdout. Any normalization must be computed per window or from training data only; per-participant normalization would leak the label.
+
+## 7. Within-session binary verification
+
+The subsequent [signal-baseline and reliability report](BASELINE_ROBUSTNESS_REPORT.md) adds raw-signal baseline controls, conditional participant uncertainty, validation-threshold sensitivity, and a matched seen/unseen-impostor comparison. The original results below are retained as originally reported; the follow-up explains the count and sampling differences in the initial unseen-impostor comparison.
+
+Each participant was evaluated as the authorized user against the other 26 identities. The primary protocol uses the same chronological 20 / 7 / 7 split. A StandardScaler and class-balanced logistic regression are fitted on training observations only. The user-specific acceptance threshold is selected from validation scores at the nearest finite empirical operating point to the interpolated EER crossing, then frozen for test evaluation.
+
+Values below are macro averages, giving every authorized user equal weight. Test EER is calculated from continuous test scores; test FAR and FRR use the validation-selected threshold.
+
+| Experiment | ROC-AUC | EER | FAR | FRR |
+|---|---:|---:|---:|---:|
+| All six features | **0.855** | 0.178 | 0.157 | 0.217 |
+| Means only | 0.838 | **0.167** | 0.174 | 0.222 |
+| Std/range only (both means excluded) | 0.672 | 0.361 | 0.297 | 0.429 |
+| Unseen impostors, all six (10 identity partitions) | 0.822 | 0.200 | 0.180 | 0.251 |
+
+- **Not an acceptable security operating point.** With all six features, 15.7% of known-impostor requests were falsely accepted while 21.7% of genuine requests were rejected. Always rejecting would achieve 96.3% conventional accuracy in this imbalanced task, so raw accuracy is not a useful headline metric.
+- **Mean-dependent separation dominates.** Means-only ROC-AUC is close to the all-six result, while excluding both means reduces ROC-AUC to 0.672 and raises EER to 0.361. The slightly lower means-only EER than all-six EER should not be interpreted as superiority: AUC is lower, thresholds differ by user, and each user has only seven genuine test windows.
+- **Chronology matters, but less than feature choice here.** A secondary fixed-seed random-window verification split produced all-six ROC-AUC 0.882 versus 0.855 chronologically. This is an optimism diagnostic on the same recordings, not an independent replication.
+- **Unseen attacker identities reduce performance modestly.** Holding impostor identities out of fitting lowers all-six ROC-AUC by 0.033 and raises EER by 0.022. It tests generalization to different impostors, not to a new session from the genuine user.
+- **Recording artifacts remain a credible explanation.** Median per-participant linear-trend R² is 0.91 for A_mean and 0.93 for B_mean, versus 0.02–0.03 for the spread features. Removing means is only a feature ablation; it is not equivalent to correcting raw-electrode DC offsets.
+
+These results support within-session verification signal, but do not establish a persistent biometric. The decisive follow-up is at least three independently collected sessions per participant, with electrodes removed and reapplied: enrollment on one session, threshold selection on a second, and a single untouched test on a third, including impostor identities absent from model fitting.

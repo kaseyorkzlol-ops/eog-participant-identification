@@ -39,7 +39,8 @@ from sklearn.preprocessing import StandardScaler
 # Configuration
 # ---------------------------------------------------------------------------
 REPO_DIR = os.path.dirname(os.path.abspath(__file__))
-RAW_DIR = os.path.join(REPO_DIR, "Data", "EOG Data", "Raw Data")
+DEFAULT_RAW_DIR = os.path.join(REPO_DIR, "Data", "EOG Data", "Raw Data")
+RAW_DIR = os.environ.get("EOG_RAW_DIR", DEFAULT_RAW_DIR)
 RESULTS_ROOT = os.path.join(REPO_DIR, "results")
 RESULTS_DIR = os.path.join(RESULTS_ROOT, "baseline")
 
@@ -88,7 +89,8 @@ def load_participant_signals(participant_id):
             f"Raw EOG file not found: {os.path.relpath(filename, REPO_DIR)}\n"
             "The dataset is not included in this repository. Obtain it separately "
             "(see README.md, 'Getting the data') and place the 27 files at "
-            "Data/EOG Data/Raw Data/01.mat ... 27.mat inside this repository folder.")
+            "Data/EOG Data/Raw Data/01.mat ... 27.mat inside this repository folder, "
+            "or set EOG_RAW_DIR to the existing Raw Data directory.")
     try:
         data = loadmat(filename)
         A = data["A"].astype(float).ravel()

@@ -1,0 +1,19 @@
+{
+  "seed": 20261019,
+  "model": {
+    "type": "logistic_regression",
+    "C": 1.0,
+    "class_weight": "balanced",
+    "max_iter": 10000
+  },
+  "threshold_method": "validation_eer_nearest_finite_empirical_threshold",
+  "feature_sets": ["all_6", "means_only", "std_range_only"],
+  "unseen_impostor": {
+    "enabled": true,
+    "repeats": 10,
+    "train_identities": 16,
+    "validation_identities": 5,
+    "test_identities": 5,
+    "use_all_windows_from_each_impostor_identity": true
+  }
+}

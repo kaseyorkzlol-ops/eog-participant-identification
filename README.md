@@ -4,7 +4,7 @@ Analysis code for **within-session participant identification** from two-channel
 
 > **Important scope limitation.** The dataset used has **one recording session per participant**. Training and test windows therefore always come from the same recording. These experiments **cannot establish cross-session or biometric identification**; any recording-specific property (electrode placement, skin contact, amplifier offset) is confounded with identity.
 
-> **Status:** Active research project and open-source work in progress. The current repository contains reproducible within-session participant-identification experiments. Binary EOG authentication experiments are under development. Code is released under the MIT License. The dataset is not redistributed here and remains subject to the original dataset authors' terms.
+> **Status:** Active research project and open-source work in progress. The repository contains reproducible within-session participant-identification and binary-verification experiments. Code is released under the MIT License. The dataset is not redistributed here and remains subject to the original dataset authors' terms.
 This repository contains **code only**: no raw data, no derived per-participant data, no figures from the dataset's article. A summary of aggregate results is in [RESEARCH_SUMMARY.md](RESEARCH_SUMMARY.md).
 
 ## Getting the data
@@ -33,6 +33,7 @@ eog-participant-identification/
 ```
 
 - `Data/` is git-ignored, so the files stay local.
+- Alternatively, keep the recordings in their existing location and set `EOG_RAW_DIR` to the `Raw Data` directory. In PowerShell: `$env:EOG_RAW_DIR = 'C:\path\to\Raw Data'`.
 - Each file must contain variables `A` (horizontal EOG) and `B` (vertical EOG), sampled at 250 Hz. In the copy used for development, 26 files are MATLAB v5 and `15.mat` is MATLAB v7.3 (HDF5); both are handled.
 - **File naming:** the copy used for development had files named `01.mat … 27.mat`, while the dataset's documentation shows `P_01.mat … P_27.mat`. If your copy uses the `P_XX` names, rename them, or change the filename pattern in `load_participant_signals()` in `baseline.py`.
 - To check that your copy is byte-identical to the one used for the reported results, run `python inspect_eog.py`. It compares the files against [data_checksums.sha256](data_checksums.sha256). A mismatch is not necessarily an error (a different dataset version, for example), but results may differ.
@@ -56,7 +57,7 @@ pip install -r requirements.txt
 All scripts resolve paths relative to their own location, so they can be run from any working directory. All random seeds are fixed.
 
 ```bash
-python run_all.py                  # everything below, in order (about 2-3 minutes)
+python run_all.py                  # everything below, in order
 
 # or one at a time (the baseline must run first; run_ablation.py checks against its output):
 python baseline.py                 # baseline: chronological vs random within-session split
@@ -64,13 +65,15 @@ python run_ablation.py             # feature ablation + random-split seeds 0-99
 python run_drift_analysis.py       # within-recording drift statistics
 python run_coefficients.py         # logistic-regression coefficient inspection
 python run_model_comparison.py     # six classifiers, fixed parameters, no tuning
+python run_authentication.py       # one-vs-rest verification + unseen-impostor protocol
 python test_pipeline.py            # invariant tests (or: python -m pytest test_pipeline.py)
+python test_authentication.py      # data-free authentication unit tests
 python inspect_eog.py              # data inspection + checksum verification
 ```
 
 Outputs (CSV/JSON/PNG) are written to `results/<experiment>/`. **`results/` is git-ignored** because it contains participant-level outputs (per-window features, predictions, per-participant metrics and coefficients). Keep those local unless a privacy review approves sharing them.
 
-All tests and scripts need the dataset. Without it they stop with a "file not found" error and do not run.
+The data-backed pipeline and experiment scripts require the dataset and stop with a clear "file not found" message when it is absent. `test_authentication.py` is intentionally data-free and can always exercise the verification logic on synthetic fixtures.
 
 ## Pipeline
 
@@ -86,21 +89,27 @@ raw EOG (A, B; 250 Hz, ~69 s per participant)
 ```
 
 Every participant appears in all three splits (closed-set identification). The validation set is reported but is not used for any selection.
-## Current direction
+## Authentication benchmark
 
-The current repository establishes a reproducible 27-class participant-identification baseline.
+`run_authentication.py` evaluates each participant as an authorized user against the other identities. It uses the same chronological 20/7/7 windows, fits preprocessing and class-balanced logistic regression on training data only, selects the acceptance threshold from validation scores, and evaluates once on held-out test windows. It compares all six features, means only, and std/range only. A fixed-seed random-window result is included only as a secondary temporal-optimism diagnostic.
 
-The next phase of the project investigates EOG authentication as a binary verification problem. For a given enrolled participant, that participant's windows are treated as genuine/authorized examples and windows from other participants are treated as impostor examples.
+The secondary unseen-impostor protocol uses disjoint groups of impostor identities for training, validation, and testing. This asks whether a verifier generalizes to identities absent from fitting; it is still not a cross-session experiment. See [AUTHENTICATION_PROTOCOL.md](AUTHENTICATION_PROTOCOL.md) for the exact design.
 
-Planned work includes:
-
-- one-vs-rest authentication experiments for selected participants
-- authentication-oriented evaluation using false acceptance rate, false rejection rate, ROC-AUC, and related metrics
-- comparison of classical machine-learning models
-- investigation of features less sensitive to recording-specific DC offset and temporal drift
-
-These experiments are ongoing and their results are not yet included in the current baseline.
+Generated outputs under `results/authentication/` include per-user and aggregate CSV/JSON metrics; frozen thresholds, confusion counts, and known-impostor test predictions; six research plots; and a generated Markdown report with actual local results. Participant-level outputs remain git-ignored pending privacy review. Without the private raw recordings, the data-free authentication tests still run, but no real experimental result is produced.
 ## Files
+
+The signal-baseline follow-up is documented in [BASELINE_ROBUSTNESS_REPORT.md](BASELINE_ROBUSTNESS_REPORT.md). Run it separately from the earlier benchmarks:
+
+```powershell
+# If needed, set EOG_RAW_DIR as described above.
+python run_baseline_robustness.py
+python -m unittest test_baseline_robustness.py
+
+# Preserve the first run while reproducing it in a fresh directory:
+python run_baseline_robustness.py --output results/baseline_robustness_replication
+```
+
+The follow-up uses `robustness_config.json` for fixed transformations, 5,000 identity-resampling draws, and 10 matched seen/unseen-impostor partitions. It writes participant-level CSV/JSON outputs and seven plots under `results/baseline_robustness/`; existing nonempty output directories are rejected. The repository-level report contains aggregate findings and links to local figures. Resampling intervals condition on fitted models and existing recordings; they cannot establish cross-session reliability.
 
 | File | Purpose |
 |---|---|
@@ -109,8 +118,13 @@ These experiments are ongoing and their results are not yet included in the curr
 | `run_drift_analysis.py` | Per participant × feature linear-trend statistics (descriptive) |
 | `run_coefficients.py` | Coefficient matrix of the six-feature chronological logistic regression |
 | `run_model_comparison.py` | LR, LDA, linear SVM, RBF SVM, random forest, kNN (fixed parameters) |
+| `authentication.py` | Core verification metrics, train-only modeling, thresholds, and impostor protocols. |
+| `run_authentication.py` | Known- and unseen-impostor benchmark, plots, tables, and generated report. |
+| `auth_config.json` | Fixed model, threshold, feature-set, seed, and unseen-impostor settings. |
+| `AUTHENTICATION_PROTOCOL.md` | Verification methodology and interpretation boundary. |
 | `run_all.py` | Runs all of the above, then the tests |
-| `test_pipeline.py` | 15 invariant tests: 27 IDs; raw files unmodified; 34 windows each; 918 × 6 finite features; no window overlap; disjoint splits with all IDs; train-only scaling; chronological order; seed determinism; ablation columns; coefficient-row mapping; baseline accuracy |
+| `test_pipeline.py` | 15 data-backed invariant tests: 27 IDs; raw files unmodified; 34 windows each; 918 × 6 finite features; no window overlap; disjoint splits with all IDs; train-only scaling; chronological order; seed determinism; ablation columns; coefficient-row mapping; baseline accuracy |
+| `test_authentication.py` | Data-free synthetic tests for metrics, scaling, threshold isolation, identity splits, and reproducibility. |
 | `inspect_eog.py` | Prints per-file format, length and window count; verifies checksums |
 | `data_checksums.sha256` | SHA-256 of the 27 raw files used for the reported results. Hashes only, no data. |
 | `RESEARCH_SUMMARY.md` | Aggregate results and limitations |
